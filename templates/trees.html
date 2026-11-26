@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.all_trees }} • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">DENDROLOGY REPOSITORY</span>
+  <h1>{{ t.all_trees }}</h1>
+  <p>Explore growing conditions, timber qualities, ecological services, and carbon absorption rates across 200 curated tree & agroforestry species.</p>
+</div>
+
+<div class="catalog-header">
+  <!-- SEARCH BAR -->
+  <form method="get" action="{{ url_for('trees') }}" class="search-filter-bar" style="grid-template-columns: 1fr auto;">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <div class="search-input-group">
+      <span class="search-icon-svg">🔍</span>
+      <input type="text" name="q" value="{{ query }}" placeholder="{{ t.search_placeholder }}">
+    </div>
+    <button type="submit" class="btn btn-primary">
+      {{ t.search }}
+    </button>
+  </form>
+
+  <!-- CATEGORY FILTER PILLS -->
+  <div class="filter-pills-row">
+    <a href="{{ url_for('trees', category='all', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'all' else '' }}">
+      🌳 All Species ({{ trees|length }})
+    </a>
+    <a href="{{ url_for('trees', category='timber', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'timber' else '' }}">
+      🪵 Commercial Timber
+    </a>
+    <a href="{{ url_for('trees', category='fruit', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'fruit' else '' }}">
+      🥭 Fruit & Agroforestry
+    </a>
+    <a href="{{ url_for('trees', category='medicinal', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'medicinal' else '' }}">
+      🌿 Medicinal & Healing
+    </a>
+    <a href="{{ url_for('trees', category='sacred', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'sacred' else '' }}">
+      🍃 Sacred & Ecological
+    </a>
+    <a href="{{ url_for('trees', category='plantation', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'plantation' else '' }}">
+      🌲 Fast-Growing Plantation
+    </a>
+    <a href="{{ url_for('trees', category='ornamental', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'ornamental' else '' }}">
+      🌺 Ornamental & Flowering
+    </a>
+  </div>
+</div>
+
+<!-- TREES GRID -->
+<div class="trees-grid">
+  {% for item in trees %}
+  <a class="tree-card-item" href="{{ url_for('tree_detail', slug=item.id, lang=lang) }}">
+    <div class="tree-card-thumb">
+      <img src="{{ url_for('static', filename='images/trees/' + item.id + '.svg') }}" alt="{{ item.common_name }}" loading="lazy" onerror="this.onerror=null; this.src='{{ url_for('static', filename='samples/sample_tree_neem.jpg') }}';">
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <h3 style="font-size:18px;">{{ item.common_name }}</h3>
+        {% if item.category %}
+        <span class="pill-badge green" style="font-size:10px;">{{ item.category.capitalize() }}</span>
+        {% endif %}
+      </div>
+
+      <div style="font-size:13px; font-style:italic; color:var(--primary); margin-bottom:8px;">
+        {{ item.scientific_name }}
+      </div>
+
+      <p style="font-size:12px; color:var(--text-muted); line-height:1.5; margin-bottom:12px;">
+        {{ item.distribution }}
+      </p>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-muted); border-top:1px solid var(--border-light); padding-top:8px;">
+        <span>CO₂: <b>{{ item.carbon_rate_kg_yr }} kg/yr</b></span>
+        <span style="color:var(--primary); font-weight:700;">Profile →</span>
+      </div>
+    </div>
+  </a>
+  {% else %}
+  <div class="panel" style="grid-column: 1 / -1; text-align:center; padding:40px;">
+    <h3>{{ t.not_found }}</h3>
+    <p style="color:var(--text-muted); margin-top:8px;">Try searching for Neem, Teak, Banyan, Sandalwood, or Mango.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

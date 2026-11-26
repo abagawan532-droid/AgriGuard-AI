@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<section class="hero">
+  <div class="hero-copy">
+    <div class="hero-eyebrow">
+      <span>AI • PRECISION AGRI • FORESTRY</span>
+    </div>
+    <h1>{{ t.tagline }} <br><span class="highlight">Powered by Deep Learning</span></h1>
+    <p>{{ t.intro }}</p>
+
+    <!-- Stats Bar -->
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">200</div>
+        <div class="stat-label">Crops Catalogued</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">8</div>
+        <div class="stat-label">Agri Sectors</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">200</div>
+        <div class="stat-label">Tree Species</div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="{{ url_for('leaf_scan', lang=lang) }}">
+        🍃 {{ t.leaf_title }}
+      </a>
+      <a class="btn btn-primary" href="{{ url_for('leaf_scan', lang=lang, camera=1) }}" style="background:#047857; border-color:#047857;">
+        📷 {{ t.camera }}
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('tree_scan', lang=lang) }}">
+        🌳 {{ t.tree_title }}
+      </a>
+      <a class="btn btn-secondary" href="{{ url_for('crops', lang=lang) }}">
+        🌾 {{ t.crops }} (200)
+      </a>
+    </div>
+  </div>
+
+  <!-- Interactive Hero Art Showcase -->
+  <div class="hero-art-container">
+    <div class="hero-card-preview">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="preview-badge">⚠️ Severe Blight Detected</span>
+        <span style="font-size:12px; font-weight:700; color:var(--primary);">96.8% Confidence</span>
+      </div>
+
+      <div class="preview-img-box">
+        <img src="{{ url_for('static', filename='samples/sample_tomato_early_blight.jpg') }}" alt="Tomato Early Blight Sample">
+        <div class="preview-scanner-line"></div>
+      </div>
+
+      <h4 style="font-size:16px; margin-bottom:4px;">Tomato Early Blight</h4>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">Alternaria solani • Fungal Pathogen</p>
+      
+      <div style="display:flex; gap:6px;">
+        <span class="pill-badge green">✓ Trichoderma Viride</span>
+        <span class="pill-badge blue">💧 Mancozeb 75% WP</span>
+      </div>
+    </div>
+
+    <!-- Floating interactive badges -->
+    <div class="floating-chip chip-top">
+      <span>🌳</span>
+      <div>
+        <div style="font-size:11px; color:var(--text-muted);">Teak Carbon Impact</div>
+        <div style="font-size:13px; color:var(--primary); font-weight:800;">31.0 kg CO₂ / yr</div>
+      </div>
+    </div>
+
+    <div class="floating-chip chip-bottom">
+      <span>🌐</span>
+      <div>
+        <div style="font-size:11px; color:var(--text-muted);">Multilingual Support</div>
+        <div style="font-size:13px; font-weight:800;">English • ಕನ್ನಡ • हिन्दी</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK SEARCH & DIRECTORY BAR -->
+<section style="background:rgba(255, 255, 255, 0.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid rgba(226, 232, 240, 0.85); padding:28px 20px; box-shadow:0 4px 16px -2px rgba(15, 23, 42, 0.03);">
+  <div style="max-width:900px; margin:0 auto;">
+    <form action="{{ url_for('crops') }}" method="get" class="search-input-group" style="box-shadow:var(--shadow-sm);">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <span class="search-icon-svg">🔍</span>
+      <input type="text" name="q" placeholder="{{ t.crop_search_placeholder }}" style="padding-left:42px; font-size:15px; height:50px;">
+      <button type="submit" class="btn btn-primary" style="position:absolute; right:6px; top:6px; bottom:6px; padding:0 20px;">
+        {{ t.search }}
+      </button>
+    </form>
+  </div>
+</section>
+
+<!-- 8 CROP CATEGORIES SECTION -->
+<section class="section">
+  <div class="section-head">
+    <div class="hero-eyebrow" style="margin-bottom:8px;">COMPLETE TAXONOMY</div>
+    <h2>200 Crops Across 8 Agricultural Sectors</h2>
+    <p>Explore detailed agronomic guidelines, season cycles, water requirements, and common diseases.</p>
+  </div>
+
+  <div class="categories-grid">
+    {% for cat in categories %}
+    <a class="category-card" href="{{ url_for('crops', category=cat.id, lang=lang) }}">
+      <div class="cat-header">
+        <div class="cat-icon">{{ cat.icon }}</div>
+        <span class="cat-count">{{ cat.count }} Crops</span>
+      </div>
+      <h3>{{ cat.name }}</h3>
+      <p>{{ cat.desc }}</p>
+      <div class="cat-explore-link">
+        <span>Explore {{ cat.count }} crops</span>
+        <span>→</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- 4 PILLARS / WORKFLOWS -->
+<section class="section" style="background:#f1f5f9; border-top:1px solid var(--border); border-bottom:1px solid var(--border);">
+  <div class="section-head">
+    <div class="hero-eyebrow" style="margin-bottom:8px;">INTELLIGENT DECISION SUPPORT</div>
+    <h2>Four Core Intelligence Pillars</h2>
+    <p>From leaf disease recognition to agro-economics and forestry carbon offsets.</p>
+  </div>
+
+  <div class="features-grid">
+    <div class="feature-box">
+      <div class="feature-icon-box">🍃</div>
+      <h3>Crop Disease Scanner</h3>
+      <p>Upload a photo or take a picture with your live camera. The AI diagnoses lesions, reveals pathogen types, and prescribes organic and chemical treatments.</p>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('leaf_scan', lang=lang) }}">
+        Open Leaf Scanner →
+      </a>
+    </div>
+
+    <div class="feature-box">
+      <div class="feature-icon-box">🌳</div>
+      <h3>Tree Species Recognition</h3>
+      <p>Identify tree species from leaf, bark, or canopy photos. Access growing conditions, soil tolerance, uses, and commercial lumber classification.</p>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('tree_scan', lang=lang) }}">
+        Open Tree Scanner →
+      </a>
+    </div>
+
+    <div class="feature-box">
+      <div class="feature-icon-box">🧮</div>
+      <h3>Agro-Economic & Carbon Tool</h3>
+      <p>Estimate harvest revenue, production costs, and net ROI for all 200 crops. Compute standing tree timber volume and annual CO₂ carbon offset credits.</p>
+      <a class="btn btn-secondary btn-sm" href="{{ url_for('calculator', lang=lang) }}">
+        Open Calculator →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURED CROPS STRIP -->
+<section class="section">
+  <div style="display:flex; justify-content:space-between; align-items:center; max-width:1200px; margin:0 auto 24px;">
+    <div>
+      <h2 style="font-size:24px;">Featured Crops</h2>
+      <p style="font-size:14px; color:var(--text-muted);">Quick look at essential crops from our 200 catalog</p>
+    </div>
+    <a href="{{ url_for('crops', lang=lang) }}" class="btn btn-sm btn-secondary">
+      View All 200 Crops →
+    </a>
+  </div>
+
+  <div class="crops-grid" style="margin-bottom:0;">
+    {% for crop in crops_sample %}
+    <div class="crop-card">
+      <div class="crop-card-top">
+        <div class="crop-avatar">{{ crop.icon }}</div>
+        <span class="crop-num">#{{ crop.num }}</span>
+      </div>
+      <div class="crop-title-group">
+        <h3>{{ crop.name }}</h3>
+        <div class="crop-scientific">{{ crop.scientific }}</div>
+      </div>
+      <div class="crop-specs-table">
+        <div class="crop-spec-item">
+          <strong>Season</strong>
+          <span>{{ crop.season }}</span>
+        </div>
+        <div class="crop-spec-item">
+          <strong>Water</strong>
+          <span>{{ crop.water }}</span>
+        </div>
+      </div>
+      <div class="crop-card-footer">
+        <span class="price-tag">₹{{ crop.price_quintal }}/q</span>
+        <a href="{{ url_for('crop_detail', slug=crop.id, lang=lang) }}" style="color:var(--primary); font-weight:700;">
+          Details →
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- DISCLAIMER BANNER -->
+<div class="disclaimer-banner">
+  <strong>⚠️ Important Agricultural Notice:</strong> {{ t.disclaimer }}
+</div>
+{% endblock %}

@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.leaf_title }} • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">SCANNER 01 • CROP PATHOLOGY</span>
+  <h1>{{ t.leaf_title }}</h1>
+  <p>{{ t.leaf_hint }}</p>
+</div>
+
+<div class="scanner-container">
+  <!-- INPUT PANEL -->
+  <section class="panel">
+    <!-- Tab Switcher: Upload vs Live Camera -->
+    <div class="scanner-mode-tabs">
+      <button type="button" class="scanner-tab-btn active" id="tabBtnUpload" onclick="switchScannerMode('upload')">
+        📁 {{ t.upload_tab }}
+      </button>
+      <button type="button" class="scanner-tab-btn" id="tabBtnCamera" onclick="switchScannerMode('camera')">
+        📷 {{ t.camera_tab }}
+      </button>
+    </div>
+
+    <!-- 1. LIVE CAMERA VIEWFINDER VIEW -->
+    <div id="cameraViewSection" style="display:none;">
+      <div class="camera-viewfinder-box" id="viewfinderContainer">
+        <video id="inlineCameraVideo" autoplay playsinline muted></video>
+        <div class="shutter-flash" id="cameraFlash"></div>
+
+        <!-- Targeting Reticle Overlay -->
+        <div class="camera-hud-overlay">
+          <div class="camera-hud-top">
+            <div class="camera-live-badge">
+              <span class="camera-live-dot"></span>
+              <span>LIVE CAM</span>
+            </div>
+            <button type="button" class="camera-icon-btn" onclick="flipCamera()" title="{{ t.switch_camera }}" style="padding:4px 8px; font-size:11px; background:rgba(15,23,42,0.7); color:#fff; border-color:rgba(255,255,255,0.2);">
+              🔄 {{ t.switch_camera }}
+            </button>
+          </div>
+
+          <div class="targeting-reticle">
+            <div class="reticle-corner top-left"></div>
+            <div class="reticle-corner top-right"></div>
+            <div class="reticle-corner bottom-left"></div>
+            <div class="reticle-corner bottom-right"></div>
+            <div class="camera-scan-sweep"></div>
+          </div>
+
+          <div style="text-align:center; color:rgba(255,255,255,0.9); font-size:11px; text-shadow:0 1px 3px rgba(0,0,0,0.8);">
+            {{ t.camera_hint }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="camera-action-bar">
+        <button type="button" class="camera-icon-btn" onclick="flipCamera()" title="{{ t.switch_camera }}">
+          🔄 {{ t.switch_camera }}
+        </button>
+
+        <button type="button" class="shutter-button" onclick="takeInlineSnapshot('leafScanForm', 'leafImageInput')" title="{{ t.capture_and_scan }}">
+          📸
+        </button>
+
+        <button type="button" class="camera-icon-btn" onclick="stopInlineCamera()">
+          ⏹️ {{ t.stop_camera }}
+        </button>
+      </div>
+
+      <!-- Fallback for mobile direct file capture -->
+      <div style="margin-top:14px; text-align:center;">
+        <label class="btn-mobile-cam">
+          📱 {{ t.device_camera }}
+          <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleDirectCapture(this, 'leafScanForm', 'leafImageInput')">
+        </label>
+      </div>
+    </div>
+
+    <!-- 2. FILE UPLOAD VIEW -->
+    <div id="uploadViewSection">
+      <form method="post" enctype="multipart/form-data" id="leafScanForm">
+        <input type="hidden" name="lang" value="{{ lang }}">
+
+        <!-- Drag & Drop Zone -->
+        <label class="upload-dropzone">
+          <div class="dropzone-icon">🍃</div>
+          <div class="dropzone-title">{{ t.upload_leaf }}</div>
+          <div class="dropzone-sub">JPG, PNG, WEBP, PDF • Up to 16 MB</div>
+          <input type="file" name="image" id="leafImageInput" accept=".png,.jpg,.jpeg,.webp,.pdf,application/pdf" required onchange="previewSelectedImage(this)">
+        </label>
+
+        <!-- Target Crop Selector (Optional for 200 Crops Pathology) -->
+        <div style="margin-top:14px;">
+          <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">
+            Target Crop (Optional):
+          </label>
+          <select name="crop_id" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--border); font-size:13px; font-family:inherit; background:white;">
+            <option value="">-- Auto-Detect Crop with AI (or select from 200 Crops) --</option>
+            {% for c in all_crops %}
+            <option value="{{ c.id }}" {% if selected_crop == c.id %}selected{% endif %}>
+              {{ c.num }}. {{ c.name }} ({{ c.cat_name }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Direct Phone Camera Capture Trigger -->
+        <div class="mobile-cam-btn-wrap">
+          <label class="btn-mobile-cam">
+            📷 {{ t.device_camera }}
+            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleDirectCapture(this, 'leafScanForm', 'leafImageInput')">
+          </label>
+        </div>
+
+        <!-- Instant Image Preview before submission -->
+        <div id="previewContainer" style="display:none; margin-top:14px; position:relative; border-radius:12px; overflow:hidden;">
+          <img id="imagePreview" src="#" alt="Selected Leaf Preview" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px;">
+        </div>
+
+        <!-- Action Buttons: Analyze & Live Camera -->
+        <div class="camera-controls">
+          <button type="submit" class="btn btn-primary" style="flex:1;">
+            ✨ {{ t.scan }}
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="switchScannerMode('camera')">
+            📷 {{ t.camera }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 1-Click Sample Presets -->
+    <div class="sample-presets-box">
+      <h4>{{ t.try_samples }}</h4>
+      <div class="preset-chips-wrap">
+        {% for sample in samples %}
+        <a href="{{ url_for('leaf_scan', sample=sample.id, lang=lang) }}" class="preset-chip">
+          <span>{{ sample.icon }}</span>
+          <span>{{ sample.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div style="font-size:12px; color:var(--text-muted); margin-top:18px; line-height:1.5;">
+      💡 <b>Scanning Tip:</b> Ensure good daylight and hold the leaf flat against a neutral background for maximum feature clarity.
+    </div>
+  </section>
+
+  <!-- RESULT PANEL -->
+  {% if result %}
+  <section class="panel report-panel {{ 'severe' if result.severity in ['High', 'Critical / Devastating', 'Critical / Emergency', 'Critical'] else ('moderate' if result.severity == 'Moderate' else '') }}">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="font-size:22px;">{{ t.result }}</h2>
+      <button onclick="window.print()" class="btn btn-sm btn-secondary">
+        🖨️ Print Report
+      </button>
+    </div>
+
+    {% if result.is_pdf %}
+    <div class="pdf-badge">
+      📄 Extracted & Analyzed from Uploaded PDF Document
+    </div>
+    {% endif %}
+
+    <!-- Uploaded Image Display with Scanner Line -->
+    {% if image_name %}
+    <div style="position:relative; width:100%; height:200px; border-radius:14px; overflow:hidden; margin-bottom:18px; background:#f1f5f9;">
+      <img src="{{ url_for('static', filename='uploads/' + image_name) }}" alt="Diagnosed leaf" style="width:100%; height:100%; object-fit:cover;">
+      <div class="preview-scanner-line"></div>
+    </div>
+    {% endif %}
+
+    <!-- Diagnosis Header -->
+    <div class="report-hero {{ 'severe' if not result.is_healthy else '' }}">
+      <div class="report-hero-icon">
+        {{ '🌿' if result.is_healthy else '⚠️' }}
+      </div>
+      <div class="report-hero-text">
+        <h3>{{ result.title }}</h3>
+        <div class="badge-row">
+          <span class="pill-badge {{ 'green' if result.is_healthy else 'red' }}">
+            {{ result.severity }}
+          </span>
+          <span class="pill-badge blue">
+            {{ result.pathogen }}
+          </span>
+          <span class="pill-badge amber">
+            {{ result.crop }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confidence Score Bar -->
+    <div class="confidence-box">
+      <div class="confidence-header">
+        <span>{{ t.confidence }}</span>
+        <span style="color:var(--primary); font-weight:800;">{{ result.confidence }}%</span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ result.confidence }}%;"></div>
+      </div>
+    </div>
+
+    <!-- Detailed Pathology & Treatment -->
+    <div class="treatment-section">
+      <!-- Symptoms -->
+      <div class="treatment-card">
+        <h4><span>🔍</span> {{ t.symptoms }}</h4>
+        <p>{{ result.symptoms }}</p>
+      </div>
+
+      <!-- Organic / Biological Remedies -->
+      <div class="treatment-card" style="border-left:4px solid var(--primary);">
+        <h4 style="color:var(--primary-dark);"><span>🌱</span> {{ t.organic }}</h4>
+        <p>{{ result.organic }}</p>
+      </div>
+
+      <!-- Chemical Remedies -->
+      {% if not result.is_healthy %}
+      <div class="treatment-card" style="border-left:4px solid var(--secondary);">
+        <h4 style="color:var(--secondary);"><span>🧪</span> {{ t.chemical }}</h4>
+        <p>{{ result.chemical }}</p>
+      </div>
+      {% endif %}
+
+      <!-- Prevention Protocol -->
+      <div class="treatment-card" style="border-left:4px solid var(--amber);">
+        <h4 style="color:var(--amber);"><span>🛡️</span> {{ t.prevention }}</h4>
+        <p>{{ result.prevention }}</p>
+      </div>
+    </div>
+
+    {% if result.all_diseases %}
+    <div style="margin-top:16px; padding:12px 14px; background:var(--surface-alt); border-radius:10px;">
+      <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">
+        Other Known Diseases for {{ result.crop }}:
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        {% for dis in result.all_diseases %}
+        <span class="pill-badge amber" style="font-size:11px;">⚠️ {{ dis }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if result.key_pests %}
+    <div style="margin-top:10px; padding:12px 14px; background:var(--surface-alt); border-radius:10px;">
+      <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:6px;">
+        Field Pest Vulnerabilities for {{ result.crop }}:
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        {% for pest in result.key_pests %}
+        <span class="pill-badge blue" style="font-size:11px;">🐛 {{ pest }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="font-size:11px; color:var(--text-muted); margin-top:20px; border-top:1px solid var(--border); padding-top:12px;">
+      ⚠️ {{ t.disclaimer }}
+    </div>
+  </section>
+  {% else %}
+  <!-- Empty State Placeholder before upload -->
+  <section class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:420px; background:#f8fafc; border:2px dashed var(--border);">
+    <div style="font-size:56px; margin-bottom:16px;">🌱</div>
+    <h3 style="font-size:20px; margin-bottom:8px;">Ready for Leaf Analysis</h3>
+    <p style="color:var(--text-muted); max-width:360px; font-size:14px; margin-bottom:20px;">
+      Select an image from your device, snap a live photo, or click one of the preset samples above to see an instant diagnosis.
+    </p>
+    <div style="display:flex; gap:8px;">
+      <span class="pill-badge green">✓ MobileNetV2 Active</span>
+      <span class="pill-badge blue">✓ 22 Disease Models</span>
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+  let inlineCameraStream = null;
+  let currentFacingMode = "environment"; // default to rear camera for plants
+
+  function switchScannerMode(mode) {
+    const uploadTab = document.getElementById('tabBtnUpload');
+    const cameraTab = document.getElementById('tabBtnCamera');
+    const uploadSec = document.getElementById('uploadViewSection');
+    const cameraSec = document.getElementById('cameraViewSection');
+
+    if (mode === 'camera') {
+      uploadTab.classList.remove('active');
+      cameraTab.classList.add('active');
+      uploadSec.style.display = 'none';
+      cameraSec.style.display = 'block';
+      startInlineCamera();
+    } else {
+      cameraTab.classList.remove('active');
+      uploadTab.classList.add('active');
+      cameraSec.style.display = 'none';
+      uploadSec.style.display = 'block';
+      stopInlineCamera();
+    }
+  }
+
+  function startInlineCamera() {
+    stopInlineCamera();
+    const video = document.getElementById('inlineCameraVideo');
+    if (!video) return;
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: currentFacingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 960 }
+        }
+      })
+      .then(stream => {
+        inlineCameraStream = stream;
+        video.srcObject = stream;
+        video.play().catch(e => console.log("Play interrupted", e));
+      })
+      .catch(err => {
+        console.warn("Direct getUserMedia error:", err);
+        // Fallback without strict facing mode
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            inlineCameraStream = stream;
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch(e => {
+            alert("Unable to access camera: " + e.message + "\nPlease allow camera permissions or use the Device Camera button.");
+          });
+      });
+    } else {
+      alert("Camera API not supported in this browser. Please use the Device Camera button.");
+    }
+  }
+
+  function stopInlineCamera() {
+    if (inlineCameraStream) {
+      inlineCameraStream.getTracks().forEach(track => track.stop());
+      inlineCameraStream = null;
+    }
+  }
+
+  function flipCamera() {
+    currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+    startInlineCamera();
+  }
+
+  function takeInlineSnapshot(formId, targetInputId) {
+    const video = document.getElementById('inlineCameraVideo');
+    const flash = document.getElementById('cameraFlash');
+    if (!video || !video.videoWidth) {
+      alert("Camera feed not active. Please click Start Camera.");
+      return;
+    }
+
+    // Flash animation
+    if (flash) {
+      flash.classList.add('flashing');
+      setTimeout(() => flash.classList.remove('flashing'), 200);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], "camera_leaf_scan.jpg", { type: "image/jpeg" });
+      const input = document.getElementById(targetInputId);
+      const form = document.getElementById(formId);
+
+      if (input && form) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        input.files = dataTransfer.files;
+
+        // Show immediate visual confirmation and submit
+        stopInlineCamera();
+        form.submit();
+      }
+    }, 'image/jpeg', 0.92);
+  }
+
+  function handleDirectCapture(fileInput, formId, targetInputId) {
+    if (fileInput.files && fileInput.files[0]) {
+      const form = document.getElementById(formId);
+      const mainInput = document.getElementById(targetInputId);
+      if (mainInput && fileInput.files[0]) {
+        const dt = new DataTransfer();
+        dt.items.add(fileInput.files[0]);
+        mainInput.files = dt.files;
+      }
+      if (form) {
+        form.submit();
+      }
+    }
+  }
+
+  function previewSelectedImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('imagePreview').src = e.target.result;
+        document.getElementById('previewContainer').style.display = 'block';
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  // Auto-launch camera if URL contains ?camera=1 or #camera
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('camera') === '1' || params.get('mode') === 'camera' || window.location.hash === '#camera') {
+      switchScannerMode('camera');
+    }
+  });
+
+  // Ensure camera stops if user navigates away
+  window.addEventListener('beforeunload', stopInlineCamera);
+</script>
+{% endblock %}

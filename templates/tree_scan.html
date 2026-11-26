@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.tree_title }} • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">SCANNER 02 • DENDROLOGY</span>
+  <h1>{{ t.tree_title }}</h1>
+  <p>{{ t.tree_hint }}</p>
+</div>
+
+<div class="scanner-container">
+  <!-- INPUT PANEL -->
+  <section class="panel">
+    <!-- Tab Switcher: Upload vs Live Camera -->
+    <div class="scanner-mode-tabs">
+      <button type="button" class="scanner-tab-btn active" id="treeTabBtnUpload" onclick="switchTreeScannerMode('upload')">
+        📁 {{ t.upload_tab }}
+      </button>
+      <button type="button" class="scanner-tab-btn" id="treeTabBtnCamera" onclick="switchTreeScannerMode('camera')">
+        📷 {{ t.camera_tab }}
+      </button>
+    </div>
+
+    <!-- 1. LIVE CAMERA VIEWFINDER VIEW -->
+    <div id="treeCameraViewSection" style="display:none;">
+      <div class="camera-viewfinder-box" id="treeViewfinderContainer">
+        <video id="inlineTreeCameraVideo" autoplay playsinline muted></video>
+        <div class="shutter-flash" id="treeCameraFlash"></div>
+
+        <!-- Targeting Reticle Overlay -->
+        <div class="camera-hud-overlay">
+          <div class="camera-hud-top">
+            <div class="camera-live-badge">
+              <span class="camera-live-dot"></span>
+              <span>LIVE CAM</span>
+            </div>
+            <button type="button" class="camera-icon-btn" onclick="flipTreeCamera()" title="{{ t.switch_camera }}" style="padding:4px 8px; font-size:11px; background:rgba(15,23,42,0.7); color:#fff; border-color:rgba(255,255,255,0.2);">
+              🔄 {{ t.switch_camera }}
+            </button>
+          </div>
+
+          <div class="targeting-reticle">
+            <div class="reticle-corner top-left"></div>
+            <div class="reticle-corner top-right"></div>
+            <div class="reticle-corner bottom-left"></div>
+            <div class="reticle-corner bottom-right"></div>
+            <div class="camera-scan-sweep"></div>
+          </div>
+
+          <div style="text-align:center; color:rgba(255,255,255,0.9); font-size:11px; text-shadow:0 1px 3px rgba(0,0,0,0.8);">
+            {{ t.camera_hint }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="camera-action-bar">
+        <button type="button" class="camera-icon-btn" onclick="flipTreeCamera()" title="{{ t.switch_camera }}">
+          🔄 {{ t.switch_camera }}
+        </button>
+
+        <button type="button" class="shutter-button" onclick="takeInlineTreeSnapshot('treeScanForm', 'treeImageInput')" title="{{ t.capture_and_scan }}">
+          📸
+        </button>
+
+        <button type="button" class="camera-icon-btn" onclick="stopInlineTreeCamera()">
+          ⏹️ {{ t.stop_camera }}
+        </button>
+      </div>
+
+      <!-- Fallback for mobile direct file capture -->
+      <div style="margin-top:14px; text-align:center;">
+        <label class="btn-mobile-cam">
+          📱 {{ t.device_camera }}
+          <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleDirectTreeCapture(this, 'treeScanForm', 'treeImageInput')">
+        </label>
+      </div>
+    </div>
+
+    <!-- 2. FILE UPLOAD VIEW -->
+    <div id="treeUploadViewSection">
+      <form method="post" enctype="multipart/form-data" id="treeScanForm">
+        <input type="hidden" name="lang" value="{{ lang }}">
+
+        <!-- Drag & Drop Zone -->
+        <label class="upload-dropzone">
+          <div class="dropzone-icon">🌳</div>
+          <div class="dropzone-title">{{ t.upload_tree }}</div>
+          <div class="dropzone-sub">JPG, PNG, WEBP, PDF • Up to 16 MB</div>
+          <input type="file" name="image" id="treeImageInput" accept=".png,.jpg,.jpeg,.webp,.pdf,application/pdf" required onchange="previewTreeImage(this)">
+        </label>
+
+        <!-- Direct Phone Camera Capture Trigger -->
+        <div class="mobile-cam-btn-wrap">
+          <label class="btn-mobile-cam">
+            📷 {{ t.device_camera }}
+            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="handleDirectTreeCapture(this, 'treeScanForm', 'treeImageInput')">
+          </label>
+        </div>
+
+        <!-- Instant Image Preview -->
+        <div id="treePreviewContainer" style="display:none; margin-top:14px; position:relative; border-radius:12px; overflow:hidden;">
+          <img id="treeImagePreview" src="#" alt="Selected Tree Preview" style="width:100%; max-height:220px; object-fit:cover; border-radius:12px;">
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="camera-controls">
+          <button type="submit" class="btn btn-primary" style="flex:1;">
+            ✨ {{ t.scan }}
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="switchTreeScannerMode('camera')">
+            📷 {{ t.camera }}
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 1-Click Sample Tree Presets -->
+    <div class="sample-presets-box">
+      <h4>{{ t.try_samples }}</h4>
+      <div class="preset-chips-wrap">
+        {% for sample in samples %}
+        <a href="{{ url_for('tree_scan', sample=sample.id, lang=lang) }}" class="preset-chip">
+          <span>{{ sample.icon }}</span>
+          <span>{{ sample.name }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <hr style="margin:24px 0; border:0; border-top:1px solid var(--border);">
+
+    <!-- Quick Tree Library Search -->
+    <h3 style="font-size:16px; margin-bottom:10px;">{{ t.tree_search }}</h3>
+    <form action="{{ url_for('trees') }}" method="get" style="display:flex; gap:8px;">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input name="q" placeholder="{{ t.search_placeholder }}" style="flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:10px; font-size:13px;">
+      <button class="btn btn-secondary btn-sm" type="submit">{{ t.search }}</button>
+    </form>
+  </section>
+
+  <!-- RESULT PANEL -->
+  {% if result %}
+  <section class="panel report-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h2 style="font-size:22px;">{{ t.result }}</h2>
+      <span class="pill-badge green">Species Identified</span>
+    </div>
+
+    {% if result.is_pdf %}
+    <div class="pdf-badge">
+      📄 Extracted & Analyzed from Uploaded PDF Document
+    </div>
+    {% endif %}
+
+    {% if image_name %}
+    <div style="position:relative; width:100%; height:200px; border-radius:14px; overflow:hidden; margin-bottom:18px; background:#f1f5f9;">
+      <img src="{{ url_for('static', filename='uploads/' + image_name) }}" alt="Diagnosed tree" style="width:100%; height:100%; object-fit:cover;">
+      <div class="preview-scanner-line"></div>
+    </div>
+    {% endif %}
+
+    <div class="report-hero">
+      <div style="width:70px; height:85px; border-radius:12px; overflow:hidden; background:#0f172a; flex-shrink:0;">
+        <img src="{{ url_for('static', filename='images/trees/' + result.species + '.svg') }}" alt="{{ result.common_name }}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='samples/sample_tree_neem.jpg') }}';">
+      </div>
+      <div class="report-hero-text">
+        <h3>{{ result.common_name }}</h3>
+        <div style="font-style:italic; color:var(--primary); font-size:14px; margin-bottom:6px;">
+          {{ result.scientific_name }}
+        </div>
+        <div class="badge-row">
+          <span class="pill-badge blue">Family: {{ result.family }}</span>
+          {% if result.category %}
+          <span class="pill-badge amber">{{ result.category.capitalize() }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Confidence Score Bar -->
+    <div class="confidence-box">
+      <div class="confidence-header">
+        <span>{{ t.confidence }}</span>
+        <span style="color:var(--primary); font-weight:800;">{{ result.confidence }}%</span>
+      </div>
+      <div class="confidence-bar">
+        <div class="confidence-fill" style="width: {{ result.confidence }}%;"></div>
+      </div>
+    </div>
+
+    {% if result.profile %}
+    <div class="treatment-section">
+      <div class="treatment-card">
+        <h4><span>🌍</span> {{ t.region }}</h4>
+        <p>{{ result.profile.distribution }}</p>
+      </div>
+
+      <div class="treatment-card">
+        <h4><span>✨</span> {{ t.uses }}</h4>
+        <p>{{ result.profile.uses }}</p>
+      </div>
+
+      <div class="treatment-card" style="background:var(--primary-subtle); border-color:var(--primary-border);">
+        <h4 style="color:var(--primary-dark);"><span>🌱</span> Carbon & Valuation Impact</h4>
+        <p>Average CO₂ absorption: <b>{{ result.profile.carbon_rate_kg_yr }} kg/year</b>. Benchmark timber unit rate: <b>₹{{ result.profile.default_unit_price }}/cu.ft</b>.</p>
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+          <a class="btn btn-sm btn-primary" href="{{ url_for('calculator', mode='forestry', tree=result.profile.id, lang=lang) }}">
+            🧮 Calculate Standing Timber & Carbon →
+          </a>
+          <a class="btn btn-sm btn-secondary" href="{{ url_for('tree_detail', slug=result.profile.id, lang=lang) }}">
+            View Full Tree Profile →
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="font-size:11px; color:var(--text-muted); margin-top:20px; border-top:1px solid var(--border); padding-top:12px;">
+      ⚠️ {{ t.disclaimer }}
+    </div>
+  </section>
+  {% else %}
+  <!-- Empty State Placeholder -->
+  <section class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:420px; background:#f8fafc; border:2px dashed var(--border);">
+    <div style="font-size:56px; margin-bottom:16px;">🌳</div>
+    <h3 style="font-size:20px; margin-bottom:8px;">Ready for Tree Identification</h3>
+    <p style="color:var(--text-muted); max-width:360px; font-size:14px; margin-bottom:20px;">
+      Upload a photo of leaves, bark, or canopy, or click a preset sample tree above to test the classifier.
+    </p>
+    <div style="display:flex; gap:8px;">
+      <span class="pill-badge green">✓ MobileNetV2 Active</span>
+      <span class="pill-badge blue">✓ 200 Tree Species</span>
+    </div>
+  </section>
+  {% endif %}
+</div>
+
+<script>
+  let inlineTreeCameraStream = null;
+  let currentTreeFacingMode = "environment"; // default to rear camera
+
+  function switchTreeScannerMode(mode) {
+    const uploadTab = document.getElementById('treeTabBtnUpload');
+    const cameraTab = document.getElementById('treeTabBtnCamera');
+    const uploadSec = document.getElementById('treeUploadViewSection');
+    const cameraSec = document.getElementById('treeCameraViewSection');
+
+    if (mode === 'camera') {
+      uploadTab.classList.remove('active');
+      cameraTab.classList.add('active');
+      uploadSec.style.display = 'none';
+      cameraSec.style.display = 'block';
+      startInlineTreeCamera();
+    } else {
+      cameraTab.classList.remove('active');
+      uploadTab.classList.add('active');
+      cameraSec.style.display = 'none';
+      uploadSec.style.display = 'block';
+      stopInlineTreeCamera();
+    }
+  }
+
+  function startInlineTreeCamera() {
+    stopInlineTreeCamera();
+    const video = document.getElementById('inlineTreeCameraVideo');
+    if (!video) return;
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: currentTreeFacingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 960 }
+        }
+      })
+      .then(stream => {
+        inlineTreeCameraStream = stream;
+        video.srcObject = stream;
+        video.play().catch(e => console.log("Play interrupted", e));
+      })
+      .catch(err => {
+        console.warn("Direct getUserMedia error:", err);
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            inlineTreeCameraStream = stream;
+            video.srcObject = stream;
+            video.play();
+          })
+          .catch(e => {
+            alert("Unable to access camera: " + e.message + "\nPlease allow camera permissions or use the Device Camera button.");
+          });
+      });
+    } else {
+      alert("Camera API not supported in this browser. Please use the Device Camera button.");
+    }
+  }
+
+  function stopInlineTreeCamera() {
+    if (inlineTreeCameraStream) {
+      inlineTreeCameraStream.getTracks().forEach(track => track.stop());
+      inlineTreeCameraStream = null;
+    }
+  }
+
+  function flipTreeCamera() {
+    currentTreeFacingMode = currentTreeFacingMode === "environment" ? "user" : "environment";
+    startInlineTreeCamera();
+  }
+
+  function takeInlineTreeSnapshot(formId, targetInputId) {
+    const video = document.getElementById('inlineTreeCameraVideo');
+    const flash = document.getElementById('treeCameraFlash');
+    if (!video || !video.videoWidth) {
+      alert("Camera feed not active. Please click Start Camera.");
+      return;
+    }
+
+    if (flash) {
+      flash.classList.add('flashing');
+      setTimeout(() => flash.classList.remove('flashing'), 200);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], "camera_tree_scan.jpg", { type: "image/jpeg" });
+      const input = document.getElementById(targetInputId);
+      const form = document.getElementById(formId);
+
+      if (input && form) {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        input.files = dataTransfer.files;
+
+        stopInlineTreeCamera();
+        form.submit();
+      }
+    }, 'image/jpeg', 0.92);
+  }
+
+  function handleDirectTreeCapture(fileInput, formId, targetInputId) {
+    if (fileInput.files && fileInput.files[0]) {
+      const form = document.getElementById(formId);
+      const mainInput = document.getElementById(targetInputId);
+      if (mainInput && fileInput.files[0]) {
+        const dt = new DataTransfer();
+        dt.items.add(fileInput.files[0]);
+        mainInput.files = dt.files;
+      }
+      if (form) {
+        form.submit();
+      }
+    }
+  }
+
+  function previewTreeImage(input) {
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('treeImagePreview').src = e.target.result;
+        document.getElementById('treePreviewContainer').style.display = 'block';
+      }
+      reader.readAsDataURL(input.files[0]);
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('camera') === '1' || params.get('mode') === 'camera' || window.location.hash === '#camera') {
+      switchTreeScannerMode('camera');
+    }
+  });
+
+  window.addEventListener('beforeunload', stopInlineTreeCamera);
+</script>
+{% endblock %}

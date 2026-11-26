@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+models/*.keras
+datasets/
+static/uploads/*
+!static/uploads/.gitkeep
+.env

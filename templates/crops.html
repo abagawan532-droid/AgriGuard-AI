@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}200 Crops Catalog • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">AGRONOMIC DIRECTORY</span>
+  <h1>200 Comprehensive Crops Catalog</h1>
+  <p>Search cultivation schedules, climate and soil requirements, primary diseases, and market benchmarks across 8 agricultural sectors.</p>
+</div>
+
+<div class="catalog-header">
+  <!-- SEARCH AND FILTER CONTROLS -->
+  <form method="get" action="{{ url_for('crops') }}" class="search-filter-bar">
+    <input type="hidden" name="lang" value="{{ lang }}">
+
+    <!-- Text Search Input -->
+    <div class="search-input-group">
+      <span class="search-icon-svg">🔍</span>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search by crop, scientific name, or disease...">
+    </div>
+
+    <!-- Category Dropdown -->
+    <select name="category" class="filter-select">
+      <option value="all">All 8 Sectors</option>
+      {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if selected_cat == cat.id %}selected{% endif %}>
+        {{ cat.name }} ({{ cat.count }})
+      </option>
+      {% endfor %}
+    </select>
+
+    <!-- Season Filter -->
+    <select name="season" class="filter-select">
+      <option value="all">All Seasons</option>
+      <option value="kharif" {% if selected_season == 'kharif' %}selected{% endif %}>Kharif (Monsoon)</option>
+      <option value="rabi" {% if selected_season == 'rabi' %}selected{% endif %}>Rabi (Winter)</option>
+      <option value="summer" {% if selected_season == 'summer' %}selected{% endif %}>Summer / Zaid</option>
+      <option value="perennial" {% if selected_season == 'perennial' %}selected{% endif %}>Perennial</option>
+    </select>
+
+    <!-- Water Need Filter -->
+    <select name="water" class="filter-select">
+      <option value="all">All Water Levels</option>
+      <option value="low" {% if selected_water == 'low' %}selected{% endif %}>Low Water</option>
+      <option value="moderate" {% if selected_water == 'moderate' %}selected{% endif %}>Moderate Water</option>
+      <option value="high" {% if selected_water == 'high' %}selected{% endif %}>High Water</option>
+    </select>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary" style="padding:11px 20px;">
+      Apply Filters
+    </button>
+  </form>
+
+  <!-- QUICK CATEGORY PILLS BAR -->
+  <div class="filter-pills-row">
+    <a href="{{ url_for('crops', category='all', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'all' else '' }}">
+      🌱 All 200 Crops
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('crops', category=cat.id, lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == cat.id else '' }}">
+      {{ cat.icon }} {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+    <span style="font-size:14px; font-weight:700; color:var(--text-muted);">
+      Showing <b>{{ total_found }}</b> of {{ total_crops_count }} crops
+    </span>
+    {% if query or selected_cat != 'all' or selected_season != 'all' or selected_water != 'all' %}
+    <a href="{{ url_for('crops', lang=lang) }}" style="font-size:12px; color:var(--primary); font-weight:700;">
+      ✕ Clear all filters
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- CROPS GRID -->
+<div class="crops-grid">
+  {% for crop in crops %}
+  <div class="crop-card">
+    <div class="crop-card-top">
+      <div class="crop-avatar">{{ crop.icon }}</div>
+      <span class="crop-num">#{{ crop.num }}</span>
+    </div>
+
+    <div class="crop-title-group">
+      <h3>{{ crop.name }}</h3>
+      <div class="crop-scientific">{{ crop.scientific }}</div>
+    </div>
+
+    <div class="crop-specs-table">
+      <div class="crop-spec-item">
+        <strong>Season</strong>
+        <span>{{ crop.season }}</span>
+      </div>
+      <div class="crop-spec-item">
+        <strong>Duration</strong>
+        <span>{{ crop.duration }}</span>
+      </div>
+      <div class="crop-spec-item">
+        <strong>Water Need</strong>
+        <span>{{ crop.water }}</span>
+      </div>
+      <div class="crop-spec-item">
+        <strong>Exp. Yield/Acre</strong>
+        <span>{{ crop.yield_acre }}</span>
+      </div>
+    </div>
+
+    <div class="crop-diseases-tags">
+      {% for dis in crop.diseases[:2] %}
+      <span class="disease-tag">⚠️ {{ dis.split('(')[0] }}</span>
+      {% endfor %}
+    </div>
+
+    <div class="crop-card-footer">
+      <div>
+        <span style="font-size:10px; color:var(--text-muted); display:block;">Benchmark Price</span>
+        <span class="price-tag">₹{{ crop.price_quintal }}/quintal</span>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <a href="{{ url_for('calculator', crop=crop.id, lang=lang) }}" class="btn btn-sm btn-secondary" title="Estimate profit for this crop">
+          🧮 Profit
+        </a>
+        <a href="{{ url_for('crop_detail', slug=crop.id, lang=lang) }}" class="btn btn-sm btn-primary">
+          Details →
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="panel" style="grid-column: 1 / -1; text-align:center; padding:50px 20px;">
+    <div style="font-size:48px; margin-bottom:12px;">🌾</div>
+    <h3>No crops matched your filters</h3>
+    <p style="color:var(--text-muted); margin-bottom:18px;">Try broadening your search term or selecting 'All Sectors'.</p>
+    <a href="{{ url_for('crops', lang=lang) }}" class="btn btn-primary">
+      Reset Filters
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

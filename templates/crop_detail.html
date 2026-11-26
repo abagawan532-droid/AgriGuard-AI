@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ crop.name }} ({{ crop.scientific }}) • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px; margin:24px auto 10px; padding:0 20px;">
+  <a href="{{ url_for('crops', lang=lang) }}" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--primary);">
+    ← Back to 200 Crops Directory
+  </a>
+</div>
+
+<!-- CROP HERO -->
+<section style="max-width:1100px; margin:16px auto 30px; padding:32px; background:linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border:1px solid var(--border); border-radius:var(--radius-lg); display:flex; gap:28px; align-items:center;">
+  <div style="width:96px; height:96px; border-radius:24px; background:white; display:flex; align-items:center; justify-content:center; font-size:52px; box-shadow:var(--shadow-md); flex-shrink:0;">
+    {{ crop.icon }}
+  </div>
+  <div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span class="pill-badge green">{{ crop.cat_name }}</span>
+      <span class="crop-num">Crop #{{ crop.num }} of 200</span>
+    </div>
+    <h1 style="font-size:clamp(28px, 4vw, 40px); margin-bottom:4px;">{{ crop.name }}</h1>
+    <div style="font-size:16px; font-style:italic; color:var(--primary); font-weight:600; margin-bottom:12px;">
+      {{ crop.scientific }}
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{{ url_for('leaf_scan', lang=lang) }}" class="btn btn-sm btn-primary">
+        🍃 Scan Leaf for Diseases
+      </a>
+      <a href="{{ url_for('calculator', crop=crop.id, lang=lang) }}" class="btn btn-sm btn-secondary">
+        🧮 Calculate Yield & Profit
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN SPECIFICATIONS GRID -->
+<div style="max-width:1100px; margin:0 auto 40px; padding:0 20px; display:grid; grid-template-columns:repeat(3, 1fr); gap:18px;">
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <span>🗓️</span> Cultivation Season
+    </h3>
+    <p style="font-size:15px; font-weight:700; color:var(--text);">{{ crop.season }}</p>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Duration: {{ crop.duration }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <span>🪴</span> Soil Compatibility
+    </h3>
+    <p style="font-size:15px; font-weight:700; color:var(--text);">{{ crop.soil }}</p>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Optimal root aeration & drainage required</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+      <span>💧</span> Water Requirements
+    </h3>
+    <p style="font-size:15px; font-weight:700; color:var(--text);">{{ crop.water }} Demand</p>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:4px;">Irrigate based on phenological stage</p>
+  </div>
+</div>
+
+<!-- DISEASES AND PESTS SECTION -->
+<div style="max-width:1100px; margin:0 auto 60px; padding:0 20px; display:grid; grid-template-columns:1.2fr 0.8fr; gap:24px;">
+  <!-- Common Diseases -->
+  <div class="panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="font-size:20px; display:flex; align-items:center; gap:10px; margin:0;">
+        <span>⚠️</span> Crop Pathology & Disease Guide
+      </h3>
+      {% if disease_profile %}
+      <span class="pill-badge {% if disease_profile.severity in ['Critical', 'High'] %}red{% else %}amber{% endif %}" style="font-size:11px;">
+        {{ disease_profile.severity }} Severity
+      </span>
+      {% endif %}
+    </div>
+
+    {% if disease_profile %}
+    <div style="padding:16px; background:#fff; border:1px solid var(--border); border-radius:12px; margin-bottom:16px; border-left:4px solid var(--rose);">
+      <h4 style="font-size:17px; color:#991b1b; margin-bottom:4px;">
+        {{ disease_profile.primary_disease }}
+      </h4>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;">
+        Pathogen: <b>{{ disease_profile.pathogen }}</b>
+      </div>
+      <p style="font-size:13px; color:var(--text); line-height:1.5; margin-bottom:12px;">
+        <b>Symptoms:</b> {{ disease_profile[lang].symptoms if disease_profile[lang] else disease_profile['en'].symptoms }}
+      </p>
+
+      <div style="margin-bottom:10px; font-size:13px; color:#166534; background:#f0fdf4; padding:10px 14px; border-radius:8px; border:1px solid #bbf7d0;">
+        <b>🌿 Biological & Organic Control:</b><br>
+        {{ disease_profile[lang].organic if disease_profile[lang] else disease_profile['en'].organic }}
+      </div>
+
+      <div style="margin-bottom:10px; font-size:13px; color:#991b1b; background:#fef2f2; padding:10px 14px; border-radius:8px; border:1px solid #fecaca;">
+        <b>🧪 Recommended Chemical Fungicides & Exact Dosages:</b><br>
+        {{ disease_profile[lang].chemical if disease_profile[lang] else disease_profile['en'].chemical }}
+      </div>
+
+      <div style="font-size:12px; color:var(--text-muted);">
+        <b>🛡️ Preventive Cultivation:</b> {{ disease_profile[lang].prevention if disease_profile[lang] else disease_profile['en'].prevention }}
+      </div>
+    </div>
+    {% endif %}
+
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <h4 style="font-size:14px; color:var(--text-muted); text-transform:uppercase;">All Known Diseases in this Crop</h4>
+      {% for disease in crop.diseases %}
+      <div style="padding:10px 14px; background:var(--surface-alt); border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+        <span style="font-weight:600; color:var(--text-dark);">⚠️ {{ disease }}</span>
+        <a href="{{ url_for('leaf_scan', crop=crop.id, lang=lang) }}" style="font-size:11px; color:var(--primary); font-weight:700;">Scan →</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Pests & Economics -->
+  <div style="display:flex; flex-direction:column; gap:20px;">
+    <!-- Key Pests -->
+    <div class="panel">
+      <h3 style="font-size:18px; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+        <span>🐛</span> Major Field Pests
+      </h3>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        {% for pest in crop.pests %}
+        <span style="background:#fef3c7; color:#92400e; padding:6px 12px; border-radius:20px; font-size:12px; font-weight:700;">
+          {{ pest }}
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Economic Benchmark -->
+    <div class="panel" style="background:var(--primary-subtle); border-color:var(--primary-border);">
+      <h3 style="font-size:18px; margin-bottom:12px; color:var(--primary-dark);">
+        💰 Economic Projections
+      </h3>
+      <div class="metric-row">
+        <span>Average Yield / Acre</span>
+        <strong>{{ crop.yield_acre }}</strong>
+      </div>
+      <div class="metric-row">
+        <span>Indicative Market Rate</span>
+        <strong>₹{{ crop.price_quintal }} / quintal</strong>
+      </div>
+      <div style="margin-top:16px;">
+        <a href="{{ url_for('calculator', crop=crop.id, lang=lang) }}" class="btn btn-primary btn-full">
+          Estimate Net Profit for {{ crop.name }} →
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

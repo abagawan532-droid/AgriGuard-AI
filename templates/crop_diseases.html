@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}200 Crops Disease & Pathology Directory • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">PATHOLOGY REPOSITORY • 200 CROPS</span>
+  <h1>200 Crops Disease & Treatment Guide</h1>
+  <p>Search symptoms, fungal/bacterial pathogens, biological controls, and exact chemical fungicide dosages across all 200 catalogued crops.</p>
+</div>
+
+<div class="catalog-header">
+  <!-- SEARCH BAR -->
+  <form method="get" action="{{ url_for('crop_diseases') }}" class="search-filter-bar" style="grid-template-columns: 1fr auto;">
+    <input type="hidden" name="lang" value="{{ lang }}">
+    <div class="search-input-group">
+      <span class="search-icon-svg">🔍</span>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search by crop, disease name, pathogen, or symptoms...">
+    </div>
+    <button type="submit" class="btn btn-primary">
+      {{ t.search }}
+    </button>
+  </form>
+
+  <!-- CATEGORY FILTER PILLS -->
+  <div class="filter-pills-row">
+    <a href="{{ url_for('crop_diseases', category='all', lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == 'all' else '' }}">
+      🌾 All Crops ({{ total_count }})
+    </a>
+    {% for cat in categories %}
+    <a href="{{ url_for('crop_diseases', category=cat.id, lang=lang) }}" class="category-filter-pill {{ 'active' if selected_cat == cat.id else '' }}">
+      {{ cat.icon }} {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- DISEASES GRID -->
+<div style="max-width:1200px; margin:0 auto 60px; padding:0 20px; display:grid; grid-template-columns:repeat(auto-fill, minmax(350px, 1fr)); gap:20px;">
+  {% for item in diseases %}
+  <div class="panel" style="display:flex; flex-direction:column; justify-content:space-between; border-top:4px solid {% if item.severity in ['Critical', 'High'] %}var(--rose){% else %}var(--amber){% endif %};">
+    <div>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+        <div>
+          <span style="font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase;">Crop #{{ item.num }}</span>
+          <h3 style="font-size:18px; margin:2px 0 4px;">{{ item.crop_name }}</h3>
+          <div style="font-size:12px; font-style:italic; color:var(--text-muted);">{{ item.scientific_name }}</div>
+        </div>
+        <span class="pill-badge {% if item.severity in ['Critical', 'High'] %}red{% else %}amber{% endif %}" style="font-size:10px;">
+          {{ item.severity }}
+        </span>
+      </div>
+
+      <div style="margin:12px 0; padding:10px 12px; background:var(--surface-alt); border-radius:10px;">
+        <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Primary Pathology</div>
+        <div style="font-size:14px; font-weight:800; color:#991b1b; margin-top:2px;">
+          ⚠️ {{ item.primary_disease }}
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">
+          Pathogen: {{ item.pathogen }}
+        </div>
+      </div>
+
+      <!-- Symptoms & Remedies -->
+      <div style="font-size:12px; color:var(--text); line-height:1.5; margin-bottom:12px;">
+        <b style="color:var(--text-dark);">Symptoms:</b> {{ item[lang].symptoms if item[lang] else item['en'].symptoms }}
+      </div>
+
+      <div style="margin-bottom:10px; font-size:12px; color:#166534; background:#f0fdf4; padding:8px 10px; border-radius:8px; border:1px solid #bbf7d0;">
+        <b>🌿 Organic:</b> {{ item[lang].organic if item[lang] else item['en'].organic }}
+      </div>
+
+      <div style="font-size:12px; color:#991b1b; background:#fef2f2; padding:8px 10px; border-radius:8px; border:1px solid #fecaca;">
+        <b>🧪 Chemical & Dosage:</b> {{ item[lang].chemical if item[lang] else item['en'].chemical }}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex; gap:8px; margin-top:16px; pt:12px; border-top:1px solid var(--border-light);">
+      <a href="{{ url_for('leaf_scan', crop=item.crop_id, lang=lang) }}" class="btn btn-sm btn-primary" style="flex:1; justify-content:center;">
+        🍃 Scan This Crop
+      </a>
+      <a href="{{ url_for('crop_detail', slug=item.crop_id, lang=lang) }}" class="btn btn-sm btn-secondary">
+        Details →
+      </a>
+    </div>
+  </div>
+  {% else %}
+  <div class="panel" style="grid-column: 1 / -1; text-align:center; padding:40px;">
+    <h3>No matching crop diseases found</h3>
+    <p style="color:var(--text-muted); margin-top:8px;">Try searching for Rice Blast, Wheat Rust, Tomato Blight, or Wilt.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

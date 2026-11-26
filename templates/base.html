@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="{{ 'kn' if lang=='kn' else ('hi' if lang=='hi' else 'en') }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ t.title }} — {{ t.tagline }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+</head>
+<body>
+
+  <!-- Top Sticky Navigation Bar -->
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('home', lang=lang) }}">
+      <span class="logo">🌿</span>
+      <span>AgriGuard <b>AI</b></span>
+      <span class="brand-badge">200 CROPS</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="{{ url_for('home', lang=lang) }}" class="{{ 'active' if request.endpoint == 'home' else '' }}">
+        🏠 {{ t.home }}
+      </a>
+      <a href="{{ url_for('leaf_scan', lang=lang) }}" class="{{ 'active' if request.endpoint == 'leaf_scan' else '' }}">
+        🌱 {{ t.leaf }}
+      </a>
+      <a href="{{ url_for('tree_scan', lang=lang) }}" class="{{ 'active' if request.endpoint == 'tree_scan' else '' }}">
+        🌳 {{ t.tree }}
+      </a>
+      <a href="{{ url_for('crops', lang=lang) }}" class="{{ 'active' if request.endpoint in ['crops', 'crop_detail'] else '' }}">
+        🌾 {{ t.crops }}
+      </a>
+      <a href="{{ url_for('crop_diseases', lang=lang) }}" class="{{ 'active' if request.endpoint == 'crop_diseases' else '' }}">
+        ⚠️ 200 Diseases
+      </a>
+      <a href="{{ url_for('trees', lang=lang) }}" class="{{ 'active' if request.endpoint in ['trees', 'tree_detail'] else '' }}">
+        📚 {{ t.trees }}
+      </a>
+      <a href="{{ url_for('calculator', lang=lang) }}" class="{{ 'active' if request.endpoint == 'calculator' else '' }}">
+        🧮 {{ t.calc }}
+      </a>
+      <a href="{{ url_for('about', lang=lang) }}" class="{{ 'active' if request.endpoint == 'about' else '' }}">
+        ℹ️ {{ t.about }}
+      </a>
+    </nav>
+
+    <div class="topbar-actions">
+      <!-- Direct Camera Shortcut Button -->
+      <a href="{{ url_for('leaf_scan', lang=lang, camera=1) }}" class="btn btn-sm btn-primary" style="display:flex; align-items:center; gap:5px; padding:6px 12px; font-size:12px;" title="Open Live Camera Scanner">
+        📷 {{ t.camera }}
+      </a>
+
+      <!-- AI Engine Active Pill -->
+      <div class="status-pill" title="MobileNetV2 Neural Network active for Leaf & Tree vision">
+        <span class="pulse-dot"></span>
+        <span>AI Engine: Active</span>
+      </div>
+
+      <!-- Language Selector -->
+      <form class="lang-select-wrap" method="get">
+        {% for k, v in request.args.items() %}
+          {% if k != 'lang' %}
+            <input type="hidden" name="{{ k }}" value="{{ v }}">
+          {% endif %}
+        {% endfor %}
+        <select name="lang" onchange="this.form.submit()" aria-label="Change Language">
+          <option value="en" {% if lang=='en' %}selected{% endif %}>🇬🇧 English</option>
+          <option value="kn" {% if lang=='kn' %}selected{% endif %}>🇮🇳 ಕನ್ನಡ</option>
+          <option value="hi" {% if lang=='hi' %}selected{% endif %}>🇮🇳 हिन्दी</option>
+        </select>
+      </form>
+    </div>
+  </header>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash-msg {{ category }}">
+            <span>{{ '⚠️' if category == 'error' else '✓' }}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Content View -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Universal Webcam Snapshot Modal -->
+  <div id="cameraModal">
+    <div class="camera-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="font-size:18px;">📷 Live Camera Capture</h3>
+        <button type="button" class="btn btn-sm btn-secondary" onclick="closeCamera()">✕ Close</button>
+      </div>
+      <video id="webcamVideo" autoplay playsinline></video>
+      <canvas id="snapshotCanvas" style="display:none;"></canvas>
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeCamera()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="captureSnapshot()">📸 Capture & Use</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="{{ url_for('home', lang=lang) }}">{{ t.home }}</a>
+      <a href="{{ url_for('leaf_scan', lang=lang) }}">{{ t.leaf }}</a>
+      <a href="{{ url_for('tree_scan', lang=lang) }}">{{ t.tree }}</a>
+      <a href="{{ url_for('crops', lang=lang) }}">{{ t.crops }} (200)</a>
+      <a href="{{ url_for('crop_diseases', lang=lang) }}">200 Diseases</a>
+      <a href="{{ url_for('trees', lang=lang) }}">{{ t.trees }} (200)</a>
+      <a href="{{ url_for('calculator', lang=lang) }}">{{ t.calc }}</a>
+      <a href="{{ url_for('about', lang=lang) }}">{{ t.about }}</a>
+    </div>
+    <p>{{ t.footer }}</p>
+    <p style="font-size:11px; margin-top:8px; color:#94a3b8;">
+      Empowering farmers, students, and agronomists with computer vision and agronomic intelligence.
+    </p>
+  </footer>
+
+  <!-- Universal Webcam Script -->
+  <script>
+    let currentStream = null;
+    let targetFileInputId = null;
+
+    function openCamera(targetInputId) {
+      targetFileInputId = targetInputId;
+      const modal = document.getElementById('cameraModal');
+      const video = document.getElementById('webcamVideo');
+      modal.classList.add('open');
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+          .then(stream => {
+            currentStream = stream;
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            alert("Could not access camera: " + err.message);
+            closeCamera();
+          });
+      } else {
+        alert("Camera API not supported in this browser.");
+        closeCamera();
+      }
+    }
+
+    function closeCamera() {
+      const modal = document.getElementById('cameraModal');
+      modal.classList.remove('open');
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+        currentStream = null;
+      }
+    }
+
+    function captureSnapshot() {
+      const video = document.getElementById('webcamVideo');
+      const canvas = document.getElementById('snapshotCanvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(blob => {
+        const file = new File([blob], "camera_snapshot.jpg", { type: "image/jpeg" });
+        const input = document.getElementById(targetFileInputId);
+        if (input) {
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          input.files = dataTransfer.files;
+          
+          // Trigger preview if available
+          const previewImg = document.getElementById('imagePreview');
+          if (previewImg) {
+            previewImg.src = URL.createObjectURL(blob);
+            previewImg.style.display = 'block';
+          }
+          // Submit form automatically if requested
+          const form = input.closest('form');
+          if (form) {
+            form.submit();
+          }
+        }
+        closeCamera();
+      }, 'image/jpeg', 0.92);
+    }
+  </script>
+</body>
+</html>

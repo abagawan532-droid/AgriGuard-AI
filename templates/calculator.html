@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Agro-Economic & Carbon Calculator • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">ECONOMIC ESTIMATION ENGINE</span>
+  <h1>Agro-Economic & Carbon Offset Calculator</h1>
+  <p>Accurately estimate crop yield profitability across all 200 crops, standing tree timber volume via Huber's forestry formula, and carbon offset credits.</p>
+</div>
+
+<!-- MODE SELECTOR TABS -->
+<div class="calc-tabs">
+  <a href="{{ url_for('calculator', mode='crop', crop=selected_crop_id, lang=lang) }}" class="calc-tab {{ 'active' if mode == 'crop' else '' }}">
+    🌾 200 Crops Profitability
+  </a>
+  <a href="{{ url_for('calculator', mode='forestry', tree=selected_tree_id, lang=lang) }}" class="calc-tab {{ 'active' if mode == 'forestry' else '' }}">
+    🌲 Forestry Timber & Carbon
+  </a>
+  <a href="{{ url_for('calculator', mode='simple', lang=lang) }}" class="calc-tab {{ 'active' if mode == 'simple' else '' }}">
+    🧮 Simple Commercial Math
+  </a>
+</div>
+
+<div class="calc-container">
+  <!-- TAB 1: 200 CROPS PROFITABILITY FORM -->
+  {% if mode == 'crop' %}
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px;">Crop Yield & Profit Settings</h2>
+    <form method="post" action="{{ url_for('calculator', mode='crop') }}" id="cropCalcForm">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="mode" value="crop">
+
+      <!-- Crop Selector -->
+      <div class="form-group">
+        <label for="cropSelect">Select Crop (from 200 Catalog)</label>
+        <select id="cropSelect" name="crop_id" onchange="updateCropFields(this.value)">
+          {% for c in crops %}
+          <option value="{{ c.id }}" {% if selected_crop_id == c.id %}selected{% endif %}>
+            {{ c.icon }} {{ c.name }} ({{ c.cat_name }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Land Area -->
+      <div class="form-group">
+        <label for="acreageInput">Cultivated Land Area (Acres)</label>
+        <input type="number" id="acreageInput" name="acreage" min="0.1" step="0.1" value="{{ request.form.get('acreage', '1.0') }}" required>
+      </div>
+
+      <!-- Yield per acre -->
+      <div class="form-group">
+        <label for="yieldInput">Expected Yield per Acre (Quintals)</label>
+        <input type="number" id="yieldInput" name="yield_acre" min="0.1" step="0.1" placeholder="Auto-calculated from crop data" value="{{ request.form.get('yield_acre', '') }}">
+      </div>
+
+      <!-- Market Price -->
+      <div class="form-group">
+        <label for="priceInput">Market Rate per Quintal (₹)</label>
+        <input type="number" id="priceInput" name="price_quintal" min="1" step="1" placeholder="Auto-calculated from crop data" value="{{ request.form.get('price_quintal', '') }}">
+      </div>
+
+      <!-- Production Cost -->
+      <div class="form-group">
+        <label for="costInput">Total Cultivation Cost per Acre (₹)</label>
+        <input type="number" id="costInput" name="cost_acre" min="0" step="1" placeholder="Seeds, fertilizer, irrigation, labor" value="{{ request.form.get('cost_acre', '') }}">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        Calculate Crop Profitability →
+      </button>
+    </form>
+  </section>
+
+  <!-- CROP RESULT PANEL -->
+  {% if crop_result %}
+  <section class="panel" style="border-top:4px solid var(--primary);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="font-size:22px;">Profitability Summary</h2>
+      <button onclick="window.print()" class="btn btn-sm btn-secondary">Print Receipt</button>
+    </div>
+
+    <div style="padding:14px; background:var(--surface-alt); border-radius:12px; margin-bottom:18px; display:flex; align-items:center; gap:12px;">
+      <span style="font-size:32px;">{{ crop_result.crop.icon }}</span>
+      <div>
+        <h3 style="font-size:18px; margin:0;">{{ crop_result.crop.name }}</h3>
+        <span style="font-size:12px; color:var(--text-muted);">{{ crop_result.acreage }} Acres • {{ crop_result.crop.season }}</span>
+      </div>
+    </div>
+
+    <div class="metric-row">
+      <span>Total Estimated Harvest</span>
+      <strong>{{ crop_result.total_yield }} quintals</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Price Realization</span>
+      <strong>₹{{ crop_result.price_per_quintal }} / quintal</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Estimated Gross Revenue</span>
+      <strong>₹{{ "{:,.2f}".format(crop_result.gross_revenue) }}</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Total Production Expenses</span>
+      <strong>₹{{ "{:,.2f}".format(crop_result.total_cost) }}</strong>
+    </div>
+
+    <div class="metric-row net-profit">
+      <div>
+        <span style="font-size:12px; color:var(--primary-dark); font-weight:700; text-transform:uppercase;">Estimated Net Profit</span>
+        <div style="font-size:11px; color:var(--text-muted);">After all input & labor expenses</div>
+      </div>
+      <strong>₹{{ "{:,.2f}".format(crop_result.net_profit) }}</strong>
+    </div>
+
+    <div style="margin-top:14px; padding:10px 14px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:10px; display:flex; justify-content:space-between; align-items:center; font-size:13px;">
+      <span>Return on Investment (ROI):</span>
+      <b style="color:#0369a1; font-size:16px;">{{ crop_result.roi_percent }}%</b>
+    </div>
+  </section>
+  {% else %}
+  <section class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#f8fafc; border:2px dashed var(--border);">
+    <div style="font-size:48px; margin-bottom:12px;">🌾</div>
+    <h3>Crop Estimation Ready</h3>
+    <p style="color:var(--text-muted); font-size:13px; max-width:320px;">
+      Select any crop from the list and enter your acreage to see automatic yield, revenue, and net profit projections.
+    </p>
+  </section>
+  {% endif %}
+
+  <!-- TAB 2: FORESTRY TIMBER & CARBON -->
+  {% elif mode == 'forestry' %}
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px;">Standing Tree Parameters</h2>
+    <form method="post" action="{{ url_for('calculator', mode='forestry') }}">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="mode" value="forestry">
+
+      <!-- Tree Selector -->
+      <div class="form-group">
+        <label for="treeSelect">Tree Species</label>
+        <select id="treeSelect" name="tree_id">
+          {% for t in trees %}
+          <option value="{{ t.id }}" {% if selected_tree_id == t.id %}selected{% endif %}>
+            {{ t.icon_emoji if t.icon_emoji else '🌳' }} {{ t.common_name }} ({{ t.scientific_name }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- DBH in cm -->
+      <div class="form-group">
+        <label for="dbhInput">Trunk Diameter at Breast Height - DBH (cm)</label>
+        <input type="number" id="dbhInput" name="dbh_cm" min="10" max="300" step="1" value="{{ request.form.get('dbh_cm', '45') }}" required>
+        <small style="font-size:11px; color:var(--text-muted);">Measured at 1.37 m (4.5 ft) above ground level</small>
+      </div>
+
+      <!-- Height in m -->
+      <div class="form-group">
+        <label for="heightInput">Total Commercial Height (meters)</label>
+        <input type="number" id="heightInput" name="height_m" min="2" max="60" step="0.5" value="{{ request.form.get('height_m', '14') }}" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        Compute Timber Volume & Carbon →
+      </button>
+    </form>
+  </section>
+
+  <!-- FORESTRY RESULT PANEL -->
+  {% if tree_result %}
+  <section class="panel" style="border-top:4px solid var(--primary);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h2 style="font-size:22px;">Forestry & Carbon Report</h2>
+      <button onclick="window.print()" class="btn btn-sm btn-secondary">Print Report</button>
+    </div>
+
+    <div class="metric-row">
+      <span>Timber Volume (Huber's Formula)</span>
+      <strong>{{ tree_result.volume_cuft }} cu. ft ({{ tree_result.volume_m3 }} m³)</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Total Tree Dry Biomass</span>
+      <strong>{{ tree_result.biomass_kg }} kg</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Gross Timber Valuation</span>
+      <strong>₹{{ "{:,.2f}".format(tree_result.gross_timber_val) }}</strong>
+    </div>
+
+    <div class="metric-row">
+      <span>Felling & Transport Expenses</span>
+      <strong>₹{{ "{:,.2f}".format(tree_result.harvest_cost) }}</strong>
+    </div>
+
+    <div class="metric-row net-profit">
+      <div>
+        <span style="font-size:12px; color:var(--primary-dark); font-weight:700; text-transform:uppercase;">Net Realizable Timber</span>
+        <div style="font-size:11px; color:var(--text-muted);">Commercial value at sawmill gate</div>
+      </div>
+      <strong>₹{{ "{:,.2f}".format(tree_result.net_timber_val) }}</strong>
+    </div>
+
+    <!-- Carbon Sequestration Card -->
+    <div style="margin-top:16px; padding:16px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px;">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="font-size:20px;">🌱</span>
+        <h4 style="font-size:15px; color:var(--primary-dark);">Carbon Sequestration Offset</h4>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:12px;">
+        <div>
+          <span style="color:var(--text-muted); display:block;">Lifetime CO₂ Sequestered:</span>
+          <b style="font-size:16px; color:var(--primary-dark);">{{ tree_result.total_co2_kg }} kg CO₂</b>
+        </div>
+        <div>
+          <span style="color:var(--text-muted); display:block;">Voluntary Carbon Credit:</span>
+          <b style="font-size:16px; color:var(--primary-dark);">₹{{ tree_result.carbon_credit_value }}</b>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% else %}
+  <section class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#f8fafc; border:2px dashed var(--border);">
+    <div style="font-size:48px; margin-bottom:12px;">🌲</div>
+    <h3>Forestry Model Ready</h3>
+    <p style="color:var(--text-muted); font-size:13px; max-width:320px;">
+      Enter trunk circumference (DBH) and tree height to calculate commercial timber volume and carbon offsets.
+    </p>
+  </section>
+  {% endif %}
+
+  <!-- TAB 3: SIMPLE ARITHMETIC -->
+  {% else %}
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px;">Commercial Valuation Form</h2>
+    <form method="post" action="{{ url_for('calculator', mode='simple') }}">
+      <input type="hidden" name="lang" value="{{ lang }}">
+      <input type="hidden" name="mode" value="simple">
+
+      <div class="form-group">
+        <label>{{ t.unit_price }}</label>
+        <input type="number" min="0" step="0.01" name="unit_price" value="{{ request.form.get('unit_price', '') }}" required>
+      </div>
+
+      <div class="form-group">
+        <label>{{ t.quantity }}</label>
+        <input type="number" min="0" step="0.01" name="quantity" value="{{ request.form.get('quantity', '') }}" required>
+      </div>
+
+      <div class="form-group">
+        <label>{{ t.cost }}</label>
+        <input type="number" min="0" step="0.01" name="cost" value="{{ request.form.get('cost', '') }}" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        {{ t.calculate }}
+      </button>
+    </form>
+  </section>
+
+  {% if simple_result %}
+  <section class="panel">
+    <h2 style="font-size:22px; margin-bottom:14px;">{{ t.result }}</h2>
+    <div class="metric-row">
+      <span>{{ t.gross }}</span>
+      <strong>₹{{ "{:,.2f}".format(simple_result.gross) }}</strong>
+    </div>
+    <div class="metric-row">
+      <span>{{ t.cost }}</span>
+      <strong>₹{{ "{:,.2f}".format(simple_result.cost) }}</strong>
+    </div>
+    <div class="metric-row net-profit">
+      <span>{{ t.net }}</span>
+      <strong>₹{{ "{:,.2f}".format(simple_result.net) }}</strong>
+    </div>
+    <p style="font-size:11px; color:var(--text-muted); margin-top:14px;">{{ t.value_note }}</p>
+  </section>
+  {% else %}
+  <section class="panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:#f8fafc; border:2px dashed var(--border);">
+    <div style="font-size:48px; margin-bottom:12px;">🧮</div>
+    <h3>Simple Valuation</h3>
+    <p style="color:var(--text-muted); font-size:13px;">Enter unit price, quantity and costs to compute net amount.</p>
+  </section>
+  {% endif %}
+  {% endif %}
+</div>
+
+<script>
+  function updateCropFields(cropId) {
+    fetch('/api/crop/' + cropId)
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          document.getElementById('priceInput').value = data.price_quintal;
+          // Parse yield e.g. "20-28 quintals"
+          const match = data.yield_acre.match(/(\d+)(?:\s*-\s*(\d+))?/);
+          if (match) {
+            const min = parseFloat(match[1]);
+            const max = match[2] ? parseFloat(match[2]) : min;
+            const avg = (min + max) / 2.0;
+            document.getElementById('yieldInput').value = avg;
+            document.getElementById('costInput').value = Math.round(avg * data.price_quintal * 0.40);
+          }
+        }
+      })
+      .catch(err => console.log(err));
+  }
+</script>
+{% endblock %}

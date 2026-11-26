@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.common_name }} ({{ item.scientific_name }}) • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div style="max-width:1000px; margin:24px auto 10px; padding:0 20px;">
+  <a href="{{ url_for('trees', lang=lang) }}" style="display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:700; color:var(--primary);">
+    ← {{ t.back }} to Tree Library
+  </a>
+</div>
+
+<!-- TREE HERO -->
+<section style="max-width:1000px; margin:16px auto 30px; padding:32px; background:linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%); border:1px solid var(--border); border-radius:var(--radius-lg); display:flex; gap:28px; align-items:center;">
+  <div style="width:140px; height:170px; border-radius:18px; overflow:hidden; box-shadow:var(--shadow-md); flex-shrink:0; background:#0f172a; border:2px solid var(--border);">
+    <img src="{{ url_for('static', filename='images/trees/' + item.id + '.svg') }}" alt="{{ item.common_name }}" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null; this.src='{{ url_for('static', filename='samples/sample_tree_neem.jpg') }}';">
+  </div>
+  <div>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+      <span class="pill-badge green">{{ item.family }}</span>
+      {% if item.category %}
+      <span class="pill-badge amber">{{ item.category.capitalize() }}</span>
+      {% endif %}
+    </div>
+    <h1 style="font-size:clamp(28px, 4vw, 42px); margin-bottom:4px;">{{ item.common_name }}</h1>
+    <div style="font-size:16px; font-style:italic; color:var(--primary); font-weight:600; margin-bottom:12px;">
+      {{ item.scientific_name }}
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="{{ url_for('calculator', mode='forestry', tree=item.id, lang=lang) }}" class="btn btn-sm btn-primary">
+        🧮 Compute Standing Timber & Carbon Credits
+      </a>
+      <a href="{{ url_for('tree_scan', sample=item.id, lang=lang) }}" class="btn btn-sm btn-secondary">
+        📷 Test Tree Scan
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 6 ATTRIBUTES GRID -->
+<div style="max-width:1000px; margin:0 auto 30px; padding:0 20px; display:grid; grid-template-columns:repeat(2, 1fr); gap:16px;">
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>🌍</span> {{ t.region }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.distribution }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>🌦️</span> {{ t.climate }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.climate }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>🪴</span> {{ t.soil }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.soil }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>💧</span> {{ t.water }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.water }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>☀️</span> {{ t.sun }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.sunlight }}</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="font-size:16px; margin-bottom:8px; display:flex; align-items:center; gap:8px;">
+      <span>🌱</span> {{ t.growth }}
+    </h3>
+    <p style="font-size:13px; color:var(--text-muted);">{{ item.growth_maturity }}</p>
+  </div>
+</div>
+
+<!-- DETAILED CARDS -->
+<div style="max-width:1000px; margin:0 auto 40px; padding:0 20px; display:flex; flex-direction:column; gap:16px;">
+  <!-- Benefits and Uses -->
+  <div class="panel">
+    <h3 style="font-size:18px; margin-bottom:8px;">✨ {{ t.uses }}</h3>
+    <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">{{ item.uses }}</p>
+  </div>
+
+  <!-- Age and Maturity Estimation -->
+  <div class="panel">
+    <h3 style="font-size:18px; margin-bottom:8px;">📏 {{ t.age }} & Longevity Guidance</h3>
+    <p style="font-size:14px; color:var(--text-muted); line-height:1.6;">{{ item.age_note }}</p>
+  </div>
+
+  <!-- Valuation & Carbon Sequestration -->
+  <div class="panel" style="background:var(--primary-subtle); border-color:var(--primary-border);">
+    <h3 style="font-size:18px; margin-bottom:8px; color:var(--primary-dark);">
+      ₹ Valuation, Timber & Carbon Offsets
+    </h3>
+    <p style="font-size:14px; color:#1e3a29; line-height:1.6; margin-bottom:12px;">{{ item.value_note }}</p>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-top:1px solid var(--primary-border); padding-top:12px;">
+      <div>
+        <span style="font-size:12px; color:var(--text-muted); display:block;">Average Carbon Sequestration:</span>
+        <strong style="font-size:18px; color:var(--primary-dark);">{{ item.carbon_rate_kg_yr }} kg CO₂ / year</strong>
+      </div>
+      <div>
+        <span style="font-size:12px; color:var(--text-muted); display:block;">Benchmark Timber Value:</span>
+        <strong style="font-size:18px; color:var(--primary-dark);">₹{{ item.default_unit_price }} / cu. ft</strong>
+      </div>
+      <a class="btn btn-primary" href="{{ url_for('calculator', mode='forestry', tree=item.id, lang=lang) }}">
+        Open Forestry Calculator →
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer-banner" style="margin-bottom:60px;">
+  <strong>⚠️ Legal & Ecological Notice:</strong> {{ t.disclaimer }}
+</div>
+{% endblock %}

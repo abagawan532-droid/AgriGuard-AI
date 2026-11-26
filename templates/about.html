@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}About & System Status • AgriGuard AI{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+  <span class="hero-eyebrow">SYSTEM ARCHITECTURE & DOCUMENTATION</span>
+  <h1>About AgriGuard AI</h1>
+  <p>Smart Crop & Tree Intelligence System — An end-to-end decision support platform integrating computer vision, 200 crop taxonomy, and agroforestry valuation.</p>
+</div>
+
+<div style="max-width:1100px; margin:30px auto 60px; padding:0 20px; display:grid; grid-template-columns:1fr 1fr; gap:24px;">
+  <!-- MODEL STATUS PANEL -->
+  <section class="panel" style="border-top:4px solid var(--primary);">
+    <h2 style="font-size:20px; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+      <span>🤖</span> Neural Network Models Status
+    </h2>
+    <div style="padding:14px; background:var(--primary-subtle); border-radius:12px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-weight:700;">Crop Leaf Classifier:</span>
+        <span class="pill-badge green">🟢 Active (v1.0)</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin:0;">
+        Architecture: MobileNetV2 • 224×224 RGB input • 22 Diagnostic Classes (Apple, Corn, Potato, Rice, Tomato, Wheat, Cotton).
+      </p>
+    </div>
+
+    <div style="padding:14px; background:var(--primary-subtle); border-radius:12px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-weight:700;">Tree Species Classifier:</span>
+        <span class="pill-badge green">🟢 Active (v1.0)</span>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin:0;">
+        Architecture: MobileNetV2 • 200 Tropical, Agroforestry, Sacred & Medicinal Species • Integrated with Dendrology Database.
+      </p>
+    </div>
+
+    <p style="font-size:13px; color:var(--text-muted); line-height:1.6;">
+      Models are trained using transfer learning with pre-trained feature extractors, global average pooling, dropout regularization, and softmax classification heads.
+    </p>
+  </section>
+
+  <!-- 200 CROPS BREAKDOWN PANEL -->
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+      <span>🌾</span> 200 Crops Taxonomy Breakdown
+    </h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px;">
+      {% for cat in catalog.categories %}
+      <div style="padding:10px; background:var(--surface-alt); border-radius:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span>{{ cat.icon }} {{ cat.name }}</span>
+        <b>{{ cat.count }}</b>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:16px;">
+      <a href="{{ url_for('crops', lang=lang) }}" class="btn btn-secondary btn-full btn-sm">
+        Explore 200 Crops Catalog →
+      </a>
+    </div>
+  </section>
+
+  <!-- MATHEMATICAL MODELS & FORMULAS -->
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+      <span>📐</span> Scientific & Forestry Formulations
+    </h2>
+    <div style="margin-bottom:16px;">
+      <h4 style="font-size:14px; color:var(--primary); margin-bottom:4px;">1. Huber's Tree Stem Volume Formula:</h4>
+      <p style="font-size:12px; color:var(--text-muted); font-family:monospace; background:var(--surface-alt); padding:8px 12px; border-radius:8px;">
+        V = π × (DBH / 200)² × Height × Form Factor (0.65)
+      </p>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <h4 style="font-size:14px; color:var(--primary); margin-bottom:4px;">2. IPCC Carbon Sequestration Model:</h4>
+      <p style="font-size:12px; color:var(--text-muted); font-family:monospace; background:var(--surface-alt); padding:8px 12px; border-radius:8px;">
+        CO₂ Equivalent = Wood Volume × Density (650 kg/m³) × 0.5 (C fraction) × (44/12)
+      </p>
+    </div>
+
+    <div>
+      <h4 style="font-size:14px; color:var(--primary); margin-bottom:4px;">3. Agro-Economic Net Return:</h4>
+      <p style="font-size:12px; color:var(--text-muted); font-family:monospace; background:var(--surface-alt); padding:8px 12px; border-radius:8px;">
+        Net Profit = (Yield × Price) - (Seed + Fertilizer + Irrigation + Labor)
+      </p>
+    </div>
+  </section>
+
+  <!-- ETHICAL & AGRONOMIC NOTICE -->
+  <section class="panel">
+    <h2 style="font-size:20px; margin-bottom:14px; display:flex; align-items:center; gap:8px;">
+      <span>🛡️</span> Ethical AI & Limitations
+    </h2>
+    <ul style="font-size:13px; color:var(--text-muted); line-height:1.7; padding-left:20px;">
+      <li>Tree age cannot be accurately determined from a 2D photograph alone. Precise dendrochronological dating requires tree core sampling or verifiable historical planting documentation.</li>
+      <li>Agricultural disease predictions should be regarded as preliminary decision support. Always confirm before purchasing restricted systemic agro-chemicals.</li>
+      <li>All commercial crop pricing and timber rates are indicative market averages and can fluctuate based on localized mandi market conditions.</li>
+    </ul>
+    <div style="margin-top:18px;">
+      <a href="{{ url_for('leaf_scan', lang=lang) }}" class="btn btn-primary btn-sm">
+        Start Scanning Crop Leaves →
+      </a>
+    </div>
+  </section>
+</div>
+{% endblock %}
